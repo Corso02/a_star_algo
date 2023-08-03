@@ -13,6 +13,7 @@
   "dependencies": {
     "@types/node": "^20.4.5",
     "colorts": "^0.1.63",
+    "readline-sync": "^1.4.10",
     "typescript": "^5.1.6"
   }
 }
