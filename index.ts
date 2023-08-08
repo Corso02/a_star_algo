@@ -1,4 +1,6 @@
 import 'colorts/lib/string'
+const readLineSync = require("readline-sync")
+
 
 enum TileType {
     Start,
@@ -232,7 +234,99 @@ class Field{
     }
 }
 
-let field: Field = new Field(10, 5)
+class ConsoleUi{
+
+    field: Field | null
+
+    constructor(){
+        this.field = null
+    }
+
+    printMenu(){
+        console.log("+----------------------------+")
+        console.log("|       " + "1. New field".cyan + "         |")
+        console.log("|       " + "2. Add start".cyan + "         |")
+        console.log("|       " + "3. Add end".cyan + "           |")
+        console.log("|       " + "4. Add obstacle".cyan + "      |")
+        console.log("|       " + "5. Find path".cyan + "         |")
+        console.log("|       " + "6. Get field stats".cyan + "   |")
+        console.log("|       " + "7. Print field".cyan + "       |")
+        console.log("|       " + "8. End program".cyan + "       |")
+        console.log("+----------------------------+")
+        this.selectMenuOption()
+    }
+
+    selectMenuOption(){
+        let choice = readLineSync.question("Pick an option\n")
+        while(!(/^[1-8]$/.test(choice))){
+            choice = readLineSync.question("Please pick a valid option!\n".red)
+        }
+        switch(choice){
+            case "1": this.setNewField()
+                      break
+            case "2": this.setTitle(TileType.Start)
+                      break
+            case "3": this.setTitle(TileType.End)
+                      break
+            case "4": this.setTitle(TileType.Obstacle)
+                      break
+            case "5": this.findPath()
+                      break
+            case "6": this.getStats()
+                      break
+            case "7": this.printField()
+                      break
+            case "8": this.endProgram()
+                      break
+        }
+    }
+
+    setNewField(){
+        let width = this.getNumberInput("Enter field width.\n", "Wrong input! Please enter valid number\n")
+        let height = this.getNumberInput("Enter field height.\n", "Wrong input! Please enter valid number\n")
+        this.field = new Field(width, height)
+        console.clear()
+        this.printMenu()
+    }
+
+    getNumberInput(message: String, errorMessage: String){
+        let number = readLineSync.question(message.yellow)
+        while(!(/^\d*$/.test(number))){
+            number = readLineSync.question(errorMessage.red)
+        }
+        return Number(number)
+    }
+
+    setTitle(type: TileType){
+
+    }
+
+    findPath(){
+
+    }
+
+    getStats(){
+
+    }
+
+    endProgram(){
+
+    }
+
+    printField(){
+        if(this.field === null){
+            console.log("Field is not defined.\nPlease define field before trying to print".magenta)
+            this.printMenu()
+        }
+        else{
+            this.field.printField()
+
+        }
+    }
+
+}
+
+/* let field: Field = new Field(10, 5)
 field.setTile(0,0, TileType.Start)
 field.setTile(5,2, TileType.End)
 field.setTile(1,0, TileType.Obstacle)
@@ -264,4 +358,8 @@ field.findPath()
 console.log("FOUND")
 
 field.printField()
+ */
 
+let ui = new ConsoleUi()
+
+ui.printMenu()
