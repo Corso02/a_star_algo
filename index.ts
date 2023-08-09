@@ -1,6 +1,7 @@
 import 'colorts/lib/string'
 const readLineSync = require("readline-sync")
 
+// TODO: fix bug "finding path after blocking all possible paths after finding path"
 
 enum TileType {
     Start,
@@ -146,11 +147,20 @@ class Field{
         else if(yPos >= this.height || yPos < 0)
             console.log(`Error when changing tile type on Y: ${yPos}! Expected yPos to be within 0 and ${this.height - 1}`)
         else{
-            if(type === TileType.Start)
-                this.start = this.field[yPos][xPos]
-            if(type === TileType.End)
-                this.end = this.field[yPos][xPos]
-            this.field[yPos][xPos].changeType(type)
+            if(this.field[yPos][xPos].type === type){
+                this.field[yPos][xPos].changeType(TileType.Path)
+                if(type === TileType.Start)
+                    this.start = null
+                if(type === TileType.End)
+                    this.end = null
+            }
+            else{
+                if(type === TileType.Start)
+                    this.start = this.field[yPos][xPos]
+                if(type === TileType.End)
+                    this.end = this.field[yPos][xPos]
+                this.field[yPos][xPos].changeType(type)
+            }
         }     
     }
 
@@ -179,6 +189,8 @@ class Field{
         else if(this.end === null)
             console.log('End tile is not set! Set end tile before trying to find a path.')
         else{
+            this.closeSet = []
+            this.openSet = []
             for(let i = 0; i < this.height; i++){
                 for(let j = 0; j < this.width; j++){
                     this.field[i][j].updateNeighbours(this.field)
@@ -196,6 +208,7 @@ class Field{
 
                 let curr = this.openSet[idx]
 
+                // create final path
                 if(curr.isEnd()){
                     let tmp = curr
                     while(tmp.parent){
@@ -204,6 +217,7 @@ class Field{
                             this.field[tmp.yPos][tmp.xPos].changeType(TileType.FinalPath)
                         }
                     }
+                    return true
                 }
 
                 this.openSet.splice(idx, 1)
@@ -231,6 +245,7 @@ class Field{
                 }
             }
         }
+        return false
     }
 }
 
@@ -297,12 +312,42 @@ class ConsoleUi{
         return Number(number)
     }
 
-    setTitle(type: TileType){
+    getTilePosition(getCol: boolean){
+        if(this.field === null){
+            console.log("Field is not defined.\nPlease define field before trying to print".magenta)
+            this.printMenu()
+        }
+        let strToAdd = getCol ? "col" : "row"
+        let number = this.getNumberInput(`Enter ${strToAdd} number.\n`, `Invalid input detected! Enter valid ${strToAdd} number.\n`)
+        while(number === 0 || (getCol && number > this.field.width) || (!getCol && number > this.field.height)){
+            if(number === 0)
+                console.log(`${strToAdd} number cannot be 0`.red)
+            else if(getCol && number > this.field.width)
+                console.log(`${strToAdd} cannot be greater than field width (${this.field.width})`)
+            else
+                console.log(`${strToAdd} cannot be greater than field height (${this.field.height})`)
+            number = this.getNumberInput(`Enter ${strToAdd} number.\n`, `Invalid input detected! Enter valid ${strToAdd} number.\n`)
+        }
 
+        return Number(number) - 1 // -1 because array starts on index 0
+    }
+
+    setTitle(type: TileType){
+        let col = this.getTilePosition(true)
+        let row = this.getTilePosition(false)
+        this.field.setTile(col, row, type)
+        console.clear()
+        this.printMenu()
     }
 
     findPath(){
-
+        if(this.field === null){
+            console.log("Field is not defined.\nPlease define field before trying to print".magenta)
+            this.printMenu()
+        }
+        if(!this.field.findPath())
+            console.log("PATH NOT FOUND!".red)
+        this.printMenu()
     }
 
     getStats(){
@@ -319,47 +364,13 @@ class ConsoleUi{
             this.printMenu()
         }
         else{
+            console.clear()
             this.field.printField()
-
+            this.printMenu()
         }
     }
 
 }
-
-/* let field: Field = new Field(10, 5)
-field.setTile(0,0, TileType.Start)
-field.setTile(5,2, TileType.End)
-field.setTile(1,0, TileType.Obstacle)
-field.setTile(1,1, TileType.Obstacle)
-field.setTile(1,2, TileType.Obstacle)
-field.setTile(1,3, TileType.Obstacle)
-field.setTile(2,3, TileType.Obstacle)
-field.setTile(3,3, TileType.Obstacle)
-field.setTile(4,3, TileType.Obstacle)
-field.setTile(5,3, TileType.Obstacle)
-field.setTile(6,3, TileType.Obstacle)
-field.setTile(7,3, TileType.Obstacle)
-field.setTile(8,3, TileType.Obstacle)
-field.setTile(8,2, TileType.Obstacle)
-field.setTile(8,1, TileType.Obstacle)
-field.setTile(7,1, TileType.Obstacle)
-field.setTile(6,1, TileType.Obstacle)
-field.setTile(5,1, TileType.Obstacle)
-field.setTile(4,1, TileType.Obstacle)
-field.setTile(3,1, TileType.Obstacle)
-
-
-field.printField()
-
-console.log("FINDING PATH")
-
-field.findPath()
-
-console.log("FOUND")
-
-field.printField()
- */
-
 let ui = new ConsoleUi()
 
 ui.printMenu()
