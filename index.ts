@@ -1,4 +1,5 @@
 import 'colorts/lib/string'
+import * as fs from "fs"
 const readLineSync = require("readline-sync")
 
 // TODO: fix bug "finding path after blocking all possible paths after finding path"
@@ -247,6 +248,28 @@ class Field{
         }
         return false
     }
+
+    parseField(field: Tile[][]){
+        for(let i = 0; i < field.length; i++){
+            for(let j = 0; j < field[0].length; j++){
+                this.field[i][j].changeType(field[i][j].type)
+                if(field[i][j].type === TileType.Start)
+                    this.start = this.field[i][j]
+                if(field[i][j].type === TileType.End)
+                    this.end = this.field[i][j]
+            }
+        }
+    }
+
+    prepareForExport(){
+        for(let i = 0; i < this.height; i++){
+            for(let j = 0; j < this.width; j++){
+                this.field[i][j].neighbours = []
+                if(this.field[i][j].type === TileType.FinalPath)
+                    this.field[i][j].changeType(TileType.Path)
+            }
+        }
+    }
 }
 
 class ConsoleUi{
@@ -264,16 +287,17 @@ class ConsoleUi{
         console.log("|       " + "3. Add end".cyan + "           |")
         console.log("|       " + "4. Add obstacle".cyan + "      |")
         console.log("|       " + "5. Find path".cyan + "         |")
-        console.log("|       " + "6. Get field stats".cyan + "   |")
-        console.log("|       " + "7. Print field".cyan + "       |")
-        console.log("|       " + "8. End program".cyan + "       |")
+        console.log("|       " + "6. Print field".cyan + "       |")
+        console.log("|       " + "7. Import field".cyan + "      |") 
+        console.log("|       " + "8. Export field".cyan + "      |")
+        console.log("|       " + "9. End program".cyan + "       |")
         console.log("+----------------------------+")
         this.selectMenuOption()
     }
 
     selectMenuOption(){
         let choice = readLineSync.question("Pick an option\n")
-        while(!(/^[1-8]$/.test(choice))){
+        while(!(/^[1-9]$/.test(choice))){
             choice = readLineSync.question("Please pick a valid option!\n".red)
         }
         switch(choice){
@@ -287,11 +311,13 @@ class ConsoleUi{
                       break
             case "5": this.findPath()
                       break
-            case "6": this.getStats()
+            case "6": this.printField()
                       break
-            case "7": this.printField()
+            case "7": this.importFromFile()
                       break
-            case "8": this.endProgram()
+            case "8": this.exportToFile()
+                      break
+            case "9": this.endProgram()
                       break
         }
     }
@@ -301,6 +327,7 @@ class ConsoleUi{
         let height = this.getNumberInput("Enter field height.\n", "Wrong input! Please enter valid number\n")
         this.field = new Field(width, height)
         console.clear()
+        //console.log(JSON.stringify(this.field))
         this.printMenu()
     }
 
@@ -350,12 +377,9 @@ class ConsoleUi{
         this.printMenu()
     }
 
-    getStats(){
-
-    }
-
     endProgram(){
-
+        console.log("Thank you for trying out my program :)".cyan)
+        console.log("Created by Peter Vanát.".cyan)
     }
 
     printField(){
@@ -368,6 +392,58 @@ class ConsoleUi{
             this.field.printField()
             this.printMenu()
         }
+    }
+
+    exportToFile(){
+        if(this.field === null){
+            console.log("Field is not defined.\nPlease define new field before trying to export it.".magenta)
+            this.printMenu()
+        }
+        fs.opendir("./fields", async (err, dir) => {
+            if(err){
+                console.log("ERROR WHEN OPENING DIRECTORY 'fields'".red)
+                return
+            }
+            let lastFileName = ""
+            let file = await dir.read()
+            while(file !== null){
+                lastFileName = file.name
+                file = await dir.read()
+            }
+            this.field.prepareForExport()
+            let newFileNumber = lastFileName.length === 0 ? 1 : Number(lastFileName.slice(5, lastFileName.indexOf(".")))+1
+            let newFileName = `field${newFileNumber}.json`
+            fs.writeFile(`./fields/${newFileName}`, JSON.stringify(this.field), {encoding: "utf-8"}, (err) => {
+                if(err)
+                    console.log("ERROR WHEN WRITING TO FILE".red)
+                else
+                    console.log("Field saved successfuly".cyan)
+                this.printMenu()   
+            })
+        })
+        
+    }
+
+    importFromFile(){
+        let fileNumber = this.getNumberInput("Enter file number you want to import.\n", "Invalid input detected! Please input valid number.\n")
+        let fileName = `field${fileNumber}.json`
+        while(!fs.existsSync(`./fields/${fileName}`)){
+            console.log("Invalid file number detected.\nEnter valid file number.\n".magenta)
+            fileNumber = this.getNumberInput("Enter file number you want to import.\n", "Invalid input detected! Please input valid number.\n")
+            fileName = `field${fileNumber}.json`
+        }
+        fs.readFile(`./fields/${fileName}`, (err, data) => {
+            if(err){
+                console.log("Error when trying to read from a file".red)
+            }
+            else{
+                let obj = JSON.parse(data.toString())
+                this.field = new Field(obj.width, obj.height)
+                this.field.parseField(obj.field)
+                console.log("Field loaded successfuly".cyan)
+            }
+            this.printMenu()
+        })
     }
 
 }
