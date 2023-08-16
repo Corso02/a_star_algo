@@ -2,8 +2,6 @@ import 'colorts/lib/string'
 import * as fs from "fs"
 const readLineSync = require("readline-sync")
 
-// TODO: fix bug "finding path after blocking all possible paths after finding path"
-
 enum TileType {
     Start,
     End,
@@ -183,6 +181,15 @@ class Field{
         return closeList.some((tile: Tile) => tile.xPos === tileToCheck.xPos && tile.yPos === tileToCheck.yPos && tile.fParam < tileToCheck.fParam)
     }
 
+    resetField(){
+        for(let i = 0; i < this.height; i++){
+            for(let j = 0; j < this.width; j++){
+                this.field[i][j].neighbours = []
+                if(this.field[i][j].type === TileType.FinalPath)
+                    this.setTile(j, i, TileType.Path)
+            }
+        }
+    }
     
     findPath(){
         if(this.start === null)
@@ -192,6 +199,7 @@ class Field{
         else{
             this.closeSet = []
             this.openSet = []
+            this.resetField()
             for(let i = 0; i < this.height; i++){
                 for(let j = 0; j < this.width; j++){
                     this.field[i][j].updateNeighbours(this.field)
@@ -257,16 +265,6 @@ class Field{
                     this.start = this.field[i][j]
                 if(field[i][j].type === TileType.End)
                     this.end = this.field[i][j]
-            }
-        }
-    }
-
-    prepareForExport(){
-        for(let i = 0; i < this.height; i++){
-            for(let j = 0; j < this.width; j++){
-                this.field[i][j].neighbours = []
-                if(this.field[i][j].type === TileType.FinalPath)
-                    this.field[i][j].changeType(TileType.Path)
             }
         }
     }
@@ -410,7 +408,7 @@ class ConsoleUi{
                 lastFileName = file.name
                 file = await dir.read()
             }
-            this.field.prepareForExport()
+            this.field.resetField()
             let newFileNumber = lastFileName.length === 0 ? 1 : Number(lastFileName.slice(5, lastFileName.indexOf(".")))+1
             let newFileName = `field${newFileNumber}.json`
             fs.writeFile(`./fields/${newFileName}`, JSON.stringify(this.field), {encoding: "utf-8"}, (err) => {
