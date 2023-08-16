@@ -132,6 +132,10 @@ class Field{
                     process.stdout.write('F '.green)
                 else if(this.field[i][j].isObstacle())
                     process.stdout.write('O '.red)
+                else if(this.field[i][j].isStart())
+                    process.stdout.write("S ".cyan)
+                else if(this.field[i][j].isEnd())
+                    process.stdout.write("E ".magenta)
                 else
                     process.stdout.write(`${TileTypeUtil.toString(this.field[i][j].type)} `)
                 process.stdout.write("| ")
